@@ -11,13 +11,13 @@ FPS = 60
 SCHWARZ = (0, 0, 0)
 WEISS = (255, 255, 255)
 ROT = (255, 0, 0)
-MINGEGNER = [5, 10, 20, 25, 30, 35]
-MAXGEGNER = [10, 20, 30, 35, 40, 45]
+MINGEGNER = [5, 10, 15, 20, 25, 30, 35]
+MAXGEGNER = [10, 15, 20, 25, 30, 35, 40]
 RESERVEKUGELN = 10
 INGEFAHR = 3
 EINGEDRUNGENENDE = 3
 KUGELBEWEGUNG = 10
-GEGNERBEWEGUNG = [3, 4, 5, 6, 7, 8]
+GEGNERBEWEGUNG = [3, 4, 5, 6, 7, 5, 8]
 SPIELERBEWEGUNG = 7
 SPIELERXPOS = 50
 SPIELERBEWEGUNGFAKTOR = 0.8
@@ -162,10 +162,10 @@ class Spiel:
             fenster.blit(self.kugelbild, (0, H - (x * 10) - 20))
 
     def spielstand(self):
-        inhalt = "{} Tropfen für {} Milbe(n) Punkte: {} Highscore: {} Level {}".format(self.maxversuche - self.versuche,
+        inhalt = "{} Tropfen für {} Milbe(n) Punkte: {} Highscore: {} Level: {}".format(self.maxversuche - self.versuche,
                                                                                        self.anzahlaktivegegner(),
                                                                                        Session.punkte,
-                                                                                       self.highscore, Session.level)
+                                                                                       self.highscore, Session.level + 1)
         if spiel.ingefahr():
             textfarbe = ROT
         else:
