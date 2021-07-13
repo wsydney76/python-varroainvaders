@@ -68,6 +68,10 @@ class Session:
     def punktezuruecksetzen(cls):
         cls.punkte = cls.startpunkte
 
+    @classmethod
+    def naechsteslevel(cls):
+        cls.level = min(len(MINGEGNER) - 1, cls.level + 1)
+
 
 # Spiel
 class Spiel:
@@ -158,10 +162,10 @@ class Spiel:
             fenster.blit(self.kugelbild, (0, H - (x * 10) - 20))
 
     def spielstand(self):
-        inhalt = "Noch {} Tropfen für {} Milbe(n) Punkte: {} Highscore: {}".format(self.maxversuche - self.versuche,
-                                                                                   self.anzahlaktivegegner(),
-                                                                                   Session.punkte,
-                                                                                   self.highscore)
+        inhalt = "{} Tropfen für {} Milbe(n) Punkte: {} Highscore: {} Level {}".format(self.maxversuche - self.versuche,
+                                                                                       self.anzahlaktivegegner(),
+                                                                                       Session.punkte,
+                                                                                       self.highscore, Session.level)
         if spiel.ingefahr():
             textfarbe = ROT
         else:
@@ -335,11 +339,11 @@ def endebildschirm(status, text=''):
     pygame.mixer.Sound.stop(sound)
 
 
-def neuesspiel():
+def neuesspiel(naechsteslevel=False):
     global spiel, spieler, kugel
-    if Session.level >= len(MINGEGNER):
-        Session.level = len(MINGEGNER) - 1
     # Neue Instanzen erzeugen
+    if naechsteslevel:
+        Session.naechsteslevel()
     Session.setzestartpunkte()
     spiel = Spiel()
     spieler = Spieler()
@@ -376,12 +380,13 @@ spieler = Spieler()
 kugel = Kugel()
 
 # Schleife Hauptprogramm
-while spiel.aktiv:
+aktiv = True
+while aktiv:
     # Überprüfen, ob Nutzer eine Aktion durchgeführt hat
     for event in pygame.event.get():
         # Beenden bei [ESC] oder [X]
         if event.type == QUIT:
-            spiel.aktiv = False
+            aktiv = False
 
         if event.type == KEYDOWN:
             # print("Spieler hat Taste gedrückt")
@@ -394,7 +399,7 @@ while spiel.aktiv:
                 # print("Spieler hat Pfeiltaste runter gedrückt")
                 spieler.down()
             elif event.key == K_ESCAPE:
-                spiel.aktiv = False
+                aktiv = False
 
             elif event.key == K_SPACE:
                 # print("Kugel abfeuern")
@@ -442,8 +447,7 @@ while spiel.aktiv:
     if spiel.keinegegnermehr():
         zeichnespielfeld()
         endebildschirm("gewonnen")
-        Session.level += 1
-        neuesspiel()
+        neuesspiel(True)
 
     # Verloren, Gegner sind eingedrungen
     if spiel.gegnereingedrungen():
