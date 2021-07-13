@@ -19,6 +19,7 @@ EINGEDRUNGENENDE = 3
 KUGELBEWEGUNG = 10
 GEGNERBEWEGUNG = [3, 4, 5, 6, 7, 8]
 SPIELERBEWEGUNG = 7
+SPIELERXPOS = 50
 SPIELERBEWEGUNGFAKTOR = 0.8
 CAPTION = "Varroa Invaders"
 HINTERGRUNDBILD = "bilder/bienenstock1.jpg"
@@ -50,26 +51,37 @@ fenster = pygame.display.set_mode((W, H))
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 28)
 
+
 # Globale Spielvariablen
-level = 0
-punkte = 0
-hintergrund = pygame.image.load(HINTERGRUNDBILD)
-scoredatei = shelve.open(SCOREDATEI)
+class Session:
+    level = 0
+    punkte = 0
+    startpunkte = 0
+    hintergrund = pygame.image.load(HINTERGRUNDBILD)
+    scoredatei = shelve.open(SCOREDATEI)
+
+    @classmethod
+    def setzestartpunkte(cls):
+        cls.startpunkte = cls.punkte
+
+    @classmethod
+    def punktezuruecksetzen(cls):
+        cls.punkte = cls.startpunkte
 
 
 # Spiel
 class Spiel:
-    def __init__(self, level):
+    def __init__(self):
         self.aktiv = True
         self.sirenegespielt = False
-        self.anzahlgegner = random.randint(MINGEGNER[level], MAXGEGNER[level])
+        self.anzahlgegner = random.randint(MINGEGNER[Session.level], MAXGEGNER[Session.level])
         self.gegnergetroffen = 0
         self.versuche = 0
         self.maxversuche = self.anzahlgegner + RESERVEKUGELN
         self.kugelbild = pygame.image.load(KUGELBILD)
         self.gegner = []
         self.zuende1 = pygame.mixer.Sound(SCHEITERNSOUND1)
-        self.highscore = scoredatei['highscore']
+        self.highscore = Session.scoredatei['highscore']
 
         pygame.display.set_caption(CAPTION)
         pygame.mixer.music.stop()
@@ -87,11 +99,10 @@ class Spiel:
             self.sirenegespielt = True
 
     def hatgegnergetroffen(self, index):
-        global punkte
         pygame.mixer.Sound.play(self.getroffensound)
         self.gegnergetroffen += 1
         self.loeschegegner(index)
-        punkte += abs(gegner.bewegung) * 200 + W - gegner.Y
+        Session.punkte += abs(gegner.bewegung) * 200 + W - gegner.Y
 
     def anzahlaktivegegner(self):
         anzahl = 0
@@ -105,30 +116,27 @@ class Spiel:
 
     def keinegegnermehr(self):
         gewonnen = self.anzahlaktivegegner() == 0
-        if gewonnen and punkte > self.highscore:
-            scoredatei['highscore'] = punkte
+        if gewonnen and Session.punkte > self.highscore:
+            Session.scoredatei['highscore'] = Session.punkte
         return gewonnen
 
     def keineversuchemehr(self):
-        global punkte
         verloren = self.versuche >= self.maxversuche and self.anzahlaktivegegner()
         if verloren:
-            punkte = 0
+            Session.punktezuruecksetzen()
         return verloren
 
     def zuwenigversuche(self):
-        global punkte
         verloren = self.maxversuche - self.versuche < self.anzahlaktivegegner()
         if verloren:
-            punkte = 0
+            Session.punktezuruecksetzen()
         return verloren
 
     def gegnereingedrungen(self):
-        global punkte
         eingedrungen = 0
         for gegner in self.gegner:
             if gegner.status == "aktiv":
-                if gegner.X <= 180 and (abs(spieler.posY - gegner.Y) < 40):
+                if gegner.X <= SPIELERXPOS + 90 and (abs(spieler.posY - gegner.Y) < 40):
                     gegner.status = "eingedrungen"
                     eingedrungen += 1
                     spieler.langsamer()
@@ -138,7 +146,7 @@ class Spiel:
                     eingedrungen += 1
         verloren = eingedrungen >= EINGEDRUNGENENDE
         if verloren:
-            punkte = 0
+            Session.punktezuruecksetzen()
         return verloren
 
     def zeichnegegner(self):
@@ -151,7 +159,8 @@ class Spiel:
 
     def spielstand(self):
         inhalt = "Noch {} Tropfen für {} Milbe(n) Punkte: {} Highscore: {}".format(self.maxversuche - self.versuche,
-                                                                                   self.anzahlaktivegegner(), punkte,
+                                                                                   self.anzahlaktivegegner(),
+                                                                                   Session.punkte,
                                                                                    self.highscore)
         if spiel.ingefahr():
             textfarbe = ROT
@@ -223,7 +232,7 @@ class Spieler:
         if self.animbereich > 5:
             self.animbereich = 0
 
-        fenster.blit(self.bild, (100, self.posY), self.bereich[self.animbereich])
+        fenster.blit(self.bild, (SPIELERXPOS, self.posY), self.bereich[self.animbereich])
 
 
 # Kugel
@@ -254,7 +263,7 @@ class Kugel:
 
         # Korrektur wg. Bildgröße
         kugelx = self.X - 30
-        kugely = self.Y - 25
+        kugely = self.Y - 15
         abstand = int(math.sqrt(math.pow(kugelx - gegner.X, 2) + math.pow(kugely - gegner.Y, 2)))
         # print("Abstand zwischen Kugel und Gegner: ", abstand)
         getroffen = abstand < 25
@@ -275,25 +284,25 @@ class Kugel:
 class Gegner:
     def __init__(self):
         self.bild = pygame.image.load(random.choice(GEGNERBILDER))
-        self.X = random.randint(int(W / 2) - 100, W - 50)
+        self.X = random.randint(int(W / 2) - 100, W - 30)
         self.Y = random.randint(50, H - 50)
-        self.bewegung = random.randint(-GEGNERBEWEGUNG[level], GEGNERBEWEGUNG[level])
+        self.bewegung = random.randint(-GEGNERBEWEGUNG[Session.level], GEGNERBEWEGUNG[Session.level])
         self.status = "aktiv"
 
 
-def ende_bildschirm(status, text=''):
+def endebildschirm(status, text=''):
     pygame.mixer.music.stop()
     if status == "gewonnen":
         pygame.time.wait(2000)
-        tusch = pygame.mixer.Sound(ERFOLGSOUND)
-        pygame.mixer.Sound.play(tusch)
+        sound = pygame.mixer.Sound(ERFOLGSOUND)
+        pygame.mixer.Sound.play(sound)
         inhalt = "Spiel gewonnen! " + text
     else:
-        zuende1 = pygame.mixer.Sound(SCHEITERNSOUND1)
-        pygame.mixer.Sound.play(zuende1)
+        sound = pygame.mixer.Sound(SCHEITERNSOUND1)
+        pygame.mixer.Sound.play(sound)
         pygame.time.wait(2000)
-        zuende2 = pygame.mixer.Sound(SCHEITERNSOUND2)
-        pygame.mixer.Sound.play(zuende2)
+        sound = pygame.mixer.Sound(SCHEITERNSOUND2)
+        pygame.mixer.Sound.play(sound)
         inhalt = "Spiel verloren! " + text
 
     fenster.fill(WEISS)
@@ -323,20 +332,46 @@ def ende_bildschirm(status, text=''):
                 warte = False
             if event.type == KEYDOWN and event.key == K_ESCAPE:
                 warte = False
-    pygame.mixer.music.stop()
+    pygame.mixer.Sound.stop(sound)
 
 
 def neuesspiel():
-    global spiel, spieler, kugel, level
-    if level >= len(MINGEGNER):
-        level = len(MINGEGNER) - 1
+    global spiel, spieler, kugel
+    if Session.level >= len(MINGEGNER):
+        Session.level = len(MINGEGNER) - 1
     # Neue Instanzen erzeugen
-    spiel = Spiel(level)
+    Session.setzestartpunkte()
+    spiel = Spiel()
     spieler = Spieler()
     kugel = Kugel()
 
 
-spiel = Spiel(0)
+def zeichnespielfeld():
+    # Spielfeld löschen
+    fenster.fill(WEISS)
+    fenster.blit(Session.hintergrund, (0, 0))
+
+    # Spielstand ausgeben
+    fenster.blit(spiel.spielstand(), (10, 10))
+
+    # Spielfeld/figuren zeichnen
+
+    # Spieler
+    spieler.zeichne()
+
+    # Kugel
+    kugel.zeichne()
+    spiel.zeichnekugellager()
+
+    # Gegner
+    spiel.zeichnegegner()
+
+    # Fenster aktualisieren
+    pygame.display.flip()
+    clock.tick(FPS)
+
+
+spiel = Spiel()
 spieler = Spieler()
 kugel = Kugel()
 
@@ -390,12 +425,12 @@ while spiel.aktiv:
             if kugel.ausdemfeld():
                 # Verloren, keine spiel.versuche mehr
                 if spiel.keineversuchemehr():
-                    ende_bildschirm("verloren", "Keine Honigtropfen mehr")
+                    endebildschirm("verloren", "Keine Honigtropfen mehr")
                     neuesspiel()
 
                 # spiel.versuche reichen nicht mehr aus
                 if spiel.zuwenigversuche():
-                    ende_bildschirm("verloren", "Zu viele Milben für zu wenig Honigtropfen")
+                    endebildschirm("verloren", "Zu viele Milben für zu wenig Honigtropfen")
                     neuesspiel()
 
                 # Es ist bald zu Ende...
@@ -405,34 +440,15 @@ while spiel.aktiv:
     # Spiel entschieden?
     # Gewonnen, keine Gegner mehr
     if spiel.keinegegnermehr():
-        ende_bildschirm("gewonnen")
-        level += 1
+        zeichnespielfeld()
+        endebildschirm("gewonnen")
+        Session.level += 1
         neuesspiel()
 
     # Verloren, Gegner sind eingedrungen
     if spiel.gegnereingedrungen():
-        ende_bildschirm("verloren", "Zu viele Milben haben dich erwischt")
+        zeichnespielfeld()
+        endebildschirm("verloren", "Zu viele Milben haben dich erwischt")
         neuesspiel()
 
-    # Spielfeld löschen
-    fenster.fill(WEISS)
-    fenster.blit(hintergrund, (0, 0))
-
-    # Spielstand ausgeben
-    fenster.blit(spiel.spielstand(), (10, 10))
-
-    # Spielfeld/figuren zeichnen
-
-    # Spieler
-    spieler.zeichne()
-
-    # Kugel
-    kugel.zeichne()
-    spiel.zeichnekugellager()
-
-    # Gegner
-    spiel.zeichnegegner()
-
-    # Fenster aktualisieren
-    pygame.display.flip()
-    clock.tick(FPS)
+    zeichnespielfeld()
