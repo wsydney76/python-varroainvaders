@@ -18,8 +18,9 @@ INGEFAHR = 3
 EINGEDRUNGENENDE = 3
 KUGELBEWEGUNG = 10
 GEGNERBEWEGUNG = [3, 3, 4, 5, 6, 7, 5, 8]
+GEGNERSPRUNGX = 30
 SPIELERBEWEGUNG = 7
-SPIELERXPOS = 50
+SPIELERX = 50
 SPIELERBEWEGUNGFAKTOR = 0.8
 CAPTION = "Varroa Invaders"
 HINTERGRUNDBILD = "bilder/bienenstock1.jpg"
@@ -42,7 +43,9 @@ SIRENENSOUND = "sound/sirene.mp3"
 ERFOLGSOUND = "sound/tusch.mp3"
 SCHEITERNSOUND1 = "sound/help.mp3"
 SCHEITERNSOUND2 = "sound/time-to-say-goodbye.mp3"
-GETROFFENSOUND = "sound/treffer.mp3"
+SCHUSSSOUND = "sound/schuss.mp3"
+GETROFFENSOUND = ["sound/treffer.mp3", "sound/treffer2.mp3"]
+IMAUSSOUND = "sound/imaus.mp3"
 SCOREDATEI = "files/score.txt"
 
 # Init Game GUI
@@ -92,7 +95,6 @@ class Spiel:
         pygame.mixer.music.load(HINTERGRUNDSOUND)
         pygame.mixer.music.play(-1, 0.0)
         pygame.mixer.music.set_volume(.4)
-        self.getroffensound = pygame.mixer.Sound(GETROFFENSOUND)
 
         self.erzeuge_gegner()
 
@@ -103,7 +105,6 @@ class Spiel:
             self.sirenegespielt = True
 
     def hat_gegner_getroffen(self, index):
-        pygame.mixer.Sound.play(self.getroffensound)
         self.gegnergetroffen += 1
         self.loesche_gegner(index)
         Session.punkte += abs(gegner.bewegung) * 200 + W - gegner.Y
@@ -140,7 +141,8 @@ class Spiel:
         eingedrungen = 0
         for gegner in self.gegner:
             if gegner.status == "aktiv":
-                if gegner.X <= SPIELERXPOS + 90 and (abs(spieler.posY - gegner.Y) < 40):
+                if gegner.X <= (SPIELERX + spieler.bild.get_width() / len(SPIELERBILDBEREICH)) and (
+                        abs(spieler.Y - gegner.Y) < 40):
                     gegner.status = "eingedrungen"
                     eingedrungen += 1
                     spieler.langsamer()
@@ -182,15 +184,15 @@ class Spiel:
             if gegner.status == "aktiv":
                 gegner.Y += gegner.bewegung
 
-                if gegner.Y < 10:
+                if gegner.Y < 0:
                     gegner.bewegung *= -1
-                    gegner.X -= 30
+                    gegner.X -= GEGNERSPRUNGX
 
-                if gegner.Y > H - 50:
+                if gegner.Y > H - (gegner.offsety * 2):
                     gegner.bewegung *= -1
-                    gegner.X -= 30
+                    gegner.X -= GEGNERSPRUNGX
             else:
-                gegner.Y = spieler.posY
+                gegner.Y = spieler.Y
 
     def loesche_gegner(self, i):
         del self.gegner[i]
@@ -200,11 +202,12 @@ class Spiel:
 class Spieler:
     def __init__(self):
         self.bild = pygame.image.load(SPIELERBILD)
-        self.posY = 300
+        self.Y = 300
         self.bewegung = 0
         self.animbereich = 0
         self.bereich = SPIELERBILDBEREICH
         self.bewegungfaktor = 1
+        self.bildbreite = self.bild.get_width() / len(SPIELERBILDBEREICH)
 
     def nach_oben(self):
         self.bewegung = -SPIELERBEWEGUNG * self.bewegungfaktor
@@ -221,14 +224,14 @@ class Spieler:
     def bewege(self):
         # Spiellogik
         if self.bewegung != 0:
-            self.posY += self.bewegung
+            self.Y += self.bewegung
 
-        if self.posY < 0:
-            self.posY = 0
+        if self.Y < 0:
+            self.Y = 0
             self.bewegung = 0
 
-        if self.posY > H - 90:
-            self.posY = H - 90
+        if self.Y > H - 90:
+            self.Y = H - 90
             self.bewegung = 0
 
     def zeichne(self):
@@ -237,17 +240,23 @@ class Spieler:
         if self.animbereich > 5:
             self.animbereich = 0
 
-        fenster.blit(self.bild, (SPIELERXPOS, self.posY), self.bereich[self.animbereich])
+        fenster.blit(self.bild, (SPIELERX, self.Y), self.bereich[self.animbereich])
 
 
 # Kugel
 class Kugel:
     def __init__(self):
         self.bild = pygame.image.load(KUGELBILD)
+        self.imaus = pygame.mixer.Sound(IMAUSSOUND)
+        self.schuss = pygame.mixer.Sound(SCHUSSSOUND)
         self.X = 0
         self.Y = 0
         self.Xbewegung = KUGELBEWEGUNG
         self.status = False
+        self.offsetx = (self.bild.get_width() / 2)
+        self.offsety = (self.bild.get_height() / 2)
+        self.startx = SPIELERX + spieler.bildbreite
+        self.startyoffset = spieler.bild.get_height() / 2
 
     def zeichne(self):
         if self.status:
@@ -255,8 +264,9 @@ class Kugel:
 
     def feuern(self, posY):
         self.status = True
-        self.X = 200
-        self.Y = posY + 50
+        self.X = self.startx
+        self.Y = posY + self.startyoffset
+        pygame.mixer.Sound.play(self.schuss)
         spiel.versuche += 1
 
     def bewege(self):
@@ -266,22 +276,27 @@ class Kugel:
         if gegner.status == "eingedrungen":
             return False
 
-        # Korrektur wg. Bildgröße
-        kugelx = self.X - 30
-        kugely = self.Y - 15
-        abstand = int(math.sqrt(math.pow(kugelx - gegner.X, 2) + math.pow(kugely - gegner.Y, 2)))
+        # Mittelpunkte
+        kugelx = self.X + self.offsetx
+        kugely = self.Y + self.offsety
+        gegnerx = gegner.X + gegner.offsetx
+        gegnery = gegner.Y + gegner.offsety
+
+        abstand = int(math.sqrt(math.pow(kugelx - gegnerx, 2) + math.pow(kugely - gegnery, 2)))
         # print("Abstand zwischen Kugel und Gegner: ", abstand)
-        getroffen = abstand < 25
+        getroffen = abstand < gegner.offsety + self.offsety
 
         if getroffen:
             self.status = False
+            gegner.spiele_treffersound()
             spiel.hat_gegner_getroffen(durchgang)
 
         return getroffen
 
     def aus_dem_feld(self):
-        ausserhalb = self.X > W
+        ausserhalb = (self.X - self.offsetx) > W
         if ausserhalb:
+            pygame.mixer.Sound.play(self.imaus)
             self.status = False
         return ausserhalb
 
@@ -289,10 +304,16 @@ class Kugel:
 class Gegner:
     def __init__(self):
         self.bild = pygame.image.load(random.choice(GEGNERBILDER))
-        self.X = random.randint(int(W / 2) - 100, W - 30)
-        self.Y = random.randint(50, H - 50)
+        self.offsetx = (self.bild.get_width() / 2)
+        self.offsety = (self.bild.get_height() / 2)
+        self.X = random.randint(int(W / 2) - 100, W - self.offsetx * 3)
+        self.Y = random.randint(self.offsety * 2, H - self.offsety * 2)
         self.bewegung = random.randint(-GEGNERBEWEGUNG[Session.level], GEGNERBEWEGUNG[Session.level])
         self.status = "aktiv"
+        self.getroffensound = pygame.mixer.Sound(random.choice(GETROFFENSOUND))
+
+    def spiele_treffersound(self):
+        pygame.mixer.Sound.play(self.getroffensound)
 
 
 def zeige_ende_bildschirm(status, text=''):
@@ -406,7 +427,7 @@ while aktiv:
                 # print("Kugel abfeuern")
                 # nur möglich, wenn keine Kugel sichtbar ist
                 if not kugel.status:
-                    kugel.feuern(spieler.posY)
+                    kugel.feuern(spieler.Y)
 
         if event.type == KEYUP:
             # print("Spieler stoppt bewegung")
