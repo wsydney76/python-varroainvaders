@@ -97,6 +97,16 @@ class Session:
         """
         cls.level = min(len(MINGEGNER) - 1, cls.level + 1)
 
+    @classmethod
+    def vergebe_punkte(cls, gegner):
+        """
+        Punkte in Abhängigkeit von Gegnerposition und -geschwindigkeit vergeben
+        :param gegner: Getroffener Gegner
+        """
+        cls.punkte += \
+            abs(gegner.bewegung) * PUNKTEMULTIPLIKATORBEWEGUNG + \
+            (W - gegner.Y) * PUNKTEMULTIPLIKATORENTFERNUNG
+
 
 class Gegner:
     X: int
@@ -174,11 +184,12 @@ class Spiel:
         :param index: Index in Gegner-Liste
         :return: Gegner getroffen?
         """
+
+        gegner: Gegner = self.gegner[index]
+        Session.vergebe_punkte(gegner)
         self.gegnergetroffen += 1
         self.loesche_gegner(index)
-        Session.punkte += \
-            abs(gegner.bewegung) * PUNKTEMULTIPLIKATORBEWEGUNG + \
-            (W - gegner.Y) * PUNKTEMULTIPLIKATORENTFERNUNG
+
 
     def anzahl_aktive_gegner(self) -> int:
         """
@@ -270,8 +281,8 @@ class Spiel:
         text = "{} Tropfen für {} Milbe(n) Punkte: {} Highscore: {} Level: {}".format(
             self.maxversuche - self.versuche,
             self.anzahl_aktive_gegner(),
-            Session.punkte,
-            self.highscore, Session.level + 1)
+            int(Session.punkte),
+            int(self.highscore), Session.level + 1)
         if spiel.in_gefahr():
             textfarbe = ROT
         else:
