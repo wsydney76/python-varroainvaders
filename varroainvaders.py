@@ -135,25 +135,17 @@ class Session:
 
 
 class Gegner:
-    X: int
-    Y: int
-    bewegung: int
-    bild: Surface
-    getroffensound: Sound
-    offsetx: int
-    offsety: int
-    status: str
 
     def __init__(self):
-        self.bild = pygame.image.load(random.choice(GEGNERBILDER))
-        self.offsetx = int(self.bild.get_width() / 2)
-        self.offsety = int(self.bild.get_height() / 2)
-        self.X = random.randint(GEGNERLINKEGRENZE, W - self.offsetx * 3)
-        self.Y = random.randint(self.offsety * 2, H - self.offsety * 2)
-        self.bewegung = random.randint(-int(GEGNERBEWEGUNG[Session.level] / FPS),
-                                       int(GEGNERBEWEGUNG[Session.level] / FPS))
-        self.status = "aktiv"
-        self.getroffensound = pygame.mixer.Sound(random.choice(GETROFFENSOUND))
+        self.bild: Surface = pygame.image.load(random.choice(GEGNERBILDER))
+        self.offsetx: int = int(self.bild.get_width() / 2)
+        self.offsety: int = int(self.bild.get_height() / 2)
+        self.X: int = random.randint(GEGNERLINKEGRENZE, W - self.offsetx * 3)
+        self.Y: int = random.randint(self.offsety * 2, H - self.offsety * 2)
+        self.bewegung: int = random.randint(-int(GEGNERBEWEGUNG[Session.level] / FPS),
+                                            int(GEGNERBEWEGUNG[Session.level] / FPS))
+        self.status: str = "aktiv"
+        self.getroffensound: Sound = pygame.mixer.Sound(random.choice(GETROFFENSOUND))
 
     def spiele_treffersound(self) -> None:
         """
@@ -164,28 +156,18 @@ class Gegner:
 
 # Spiel
 class Spiel:
-    aktiv: bool
-    anzahlgegner: int
-    gegner: list[Gegner]
-    gegnergetroffen: int
-    highscore: int
-    kugelbild: Surface
-    maxversuche: int
-    sirenegespielt: bool
-    versuche: int
-    zuende1: Sound
 
     def __init__(self):
-        self.aktiv = True
-        self.sirenegespielt = False
-        self.anzahlgegner = random.randint(MINGEGNER[Session.level], MAXGEGNER[Session.level])
-        self.gegnergetroffen = 0
-        self.versuche = 0
-        self.maxversuche = self.anzahlgegner + RESERVEKUGELN
-        self.kugelbild = pygame.image.load(KUGELBILD)
-        self.gegner = []
-        self.zuende1 = pygame.mixer.Sound(SCHEITERNSOUND1)
-        self.highscore = Session.scoredatei['highscore']
+        self.aktiv: bool = True
+        self.sirenegespielt: bool = False
+        self.anzahlgegner: int = random.randint(MINGEGNER[Session.level], MAXGEGNER[Session.level])
+        self.gegnergetroffen: int = 0
+        self.versuche: int = 0
+        self.maxversuche: int = self.anzahlgegner + RESERVEKUGELN
+        self.kugelbild: Surface = pygame.image.load(KUGELBILD)
+        self.gegner: list[Gegner] = []
+        self.zuende1: Sound = pygame.mixer.Sound(SCHEITERNSOUND1)
+        self.highscore: int = Session.scoredatei['highscore']
 
         pygame.display.set_caption(CAPTION)
         pygame.mixer.music.stop()
@@ -351,24 +333,16 @@ class Spiel:
 
 # Spieler
 class Spieler:
-    Y: int
-    animbereich: int
-    animframe: int
-    bereich: list[tuple[int, int, int, int]]
-    bewegung: int
-    bewegungfaktor: float
-    bild: Surface
-    bildbreite: float
 
     def __init__(self):
-        self.bild = pygame.image.load(SPIELERBILD)
-        self.Y = int(H / 2 - self.bild.get_height() / 2)
-        self.bewegung = 0
-        self.animbereich = 0
-        self.animframe = 1
-        self.bereich = SPIELERBILDBEREICH
-        self.bewegungfaktor = 1
-        self.bildbreite = self.bild.get_width() / len(SPIELERBILDBEREICH)
+        self.bild: Surface = pygame.image.load(SPIELERBILD)
+        self.Y: int = int(H / 2 - self.bild.get_height() / 2)
+        self.bewegung: int = 0
+        self.animbereich: int = 0
+        self.animframe: int = 1
+        self.bereich: list[tuple[int, int, int, int]] = SPIELERBILDBEREICH
+        self.bewegungfaktor: float = 1
+        self.bildbreite: float = self.bild.get_width() / len(SPIELERBILDBEREICH)
 
     def nach_oben(self) -> None:
         """
@@ -430,30 +404,19 @@ class Spieler:
 
 # Kugel
 class Kugel:
-    bild: Surface
-    imaus: Sound
-    schuss: Sound
-    X: int
-    Y: int
-    Xbewegung: int
-    status: bool
-    offsetx = int
-    offsety = int
-    startx = int
-    startyoffset = int
 
     def __init__(self):
-        self.bild = pygame.image.load(KUGELBILD)
-        self.imaus = pygame.mixer.Sound(IMAUSSOUND)
-        self.schuss = pygame.mixer.Sound(SCHUSSSOUND)
-        self.X = 0
-        self.Y = 0
-        self.Xbewegung = int(KUGELBEWEGUNG / FPS)
-        self.status = False
-        self.offsetx = int(self.bild.get_width() / 2)
-        self.offsety = int(self.bild.get_height() / 2)
-        self.startx = int(SPIELERX + spieler.bildbreite)
-        self.startyoffset = int(spieler.bild.get_height() / 2)
+        self.bild: Surface = pygame.image.load(KUGELBILD)
+        self.imaus: Sound = pygame.mixer.Sound(IMAUSSOUND)
+        self.schuss: Sound = pygame.mixer.Sound(SCHUSSSOUND)
+        self.X: int = 0
+        self.Y: int = 0
+        self.Xbewegung: int = int(KUGELBEWEGUNG / FPS)
+        self.status: bool = False
+        self.offsetx: int = int(self.bild.get_width() / 2)
+        self.offsety: int = int(self.bild.get_height() / 2)
+        self.startx: int = int(SPIELERX + spieler.bildbreite)
+        self.startyoffset: int = int(spieler.bild.get_height() / 2)
 
     def zeichne(self) -> None:
         """
