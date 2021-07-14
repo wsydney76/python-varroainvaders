@@ -11,13 +11,13 @@ FPS = 60
 SCHWARZ = (0, 0, 0)
 WEISS = (255, 255, 255)
 ROT = (255, 0, 0)
-MINGEGNER = [5, 10, 15, 20, 25, 30, 35]
-MAXGEGNER = [10, 15, 20, 25, 30, 35, 40]
+MINGEGNER = [2, 5, 10, 15, 20, 25, 30, 35]
+MAXGEGNER = [5, 10, 15, 20, 25, 30, 35, 40]
 RESERVEKUGELN = 10
 INGEFAHR = 3
 EINGEDRUNGENENDE = 3
 KUGELBEWEGUNG = 10
-GEGNERBEWEGUNG = [3, 4, 5, 6, 7, 5, 8]
+GEGNERBEWEGUNG = [3, 3, 4, 5, 6, 7, 5, 8]
 SPIELERBEWEGUNG = 7
 SPIELERXPOS = 50
 SPIELERBEWEGUNGFAKTOR = 0.8
@@ -61,15 +61,15 @@ class Session:
     scoredatei = shelve.open(SCOREDATEI)
 
     @classmethod
-    def setzestartpunkte(cls):
+    def setze_startpunkte(cls):
         cls.startpunkte = cls.punkte
 
     @classmethod
-    def punktezuruecksetzen(cls):
+    def punkte_zuruecksetzen(cls):
         cls.punkte = cls.startpunkte
 
     @classmethod
-    def naechsteslevel(cls):
+    def naechstes_level(cls):
         cls.level = min(len(MINGEGNER) - 1, cls.level + 1)
 
 
@@ -94,49 +94,49 @@ class Spiel:
         pygame.mixer.music.set_volume(.4)
         self.getroffensound = pygame.mixer.Sound(GETROFFENSOUND)
 
-        self.erzeugegegner()
+        self.erzeuge_gegner()
 
-    def sirene(self):
+    def spiel_warnung(self):
         if not self.sirenegespielt:
             sirene = pygame.mixer.Sound(SIRENENSOUND)
             pygame.mixer.Sound.play(sirene)
             self.sirenegespielt = True
 
-    def hatgegnergetroffen(self, index):
+    def hat_gegner_getroffen(self, index):
         pygame.mixer.Sound.play(self.getroffensound)
         self.gegnergetroffen += 1
-        self.loeschegegner(index)
+        self.loesche_gegner(index)
         Session.punkte += abs(gegner.bewegung) * 200 + W - gegner.Y
 
-    def anzahlaktivegegner(self):
+    def anzahl_aktive_gegner(self):
         anzahl = 0
         for gegner in self.gegner:
             if gegner.status == 'aktiv':
                 anzahl += 1
         return anzahl
 
-    def ingefahr(self):
-        return self.maxversuche - self.versuche <= (self.anzahlaktivegegner() + INGEFAHR)
+    def in_gefahr(self):
+        return self.maxversuche - self.versuche <= (self.anzahl_aktive_gegner() + INGEFAHR)
 
-    def keinegegnermehr(self):
-        gewonnen = self.anzahlaktivegegner() == 0
+    def keine_gegner_mehr(self):
+        gewonnen = self.anzahl_aktive_gegner() == 0
         if gewonnen and Session.punkte > self.highscore:
             Session.scoredatei['highscore'] = Session.punkte
         return gewonnen
 
-    def keineversuchemehr(self):
-        verloren = self.versuche >= self.maxversuche and self.anzahlaktivegegner()
+    def keine_versuche_mehr(self):
+        verloren = self.versuche >= self.maxversuche and self.anzahl_aktive_gegner()
         if verloren:
-            Session.punktezuruecksetzen()
+            Session.punkte_zuruecksetzen()
         return verloren
 
-    def zuwenigversuche(self):
-        verloren = self.maxversuche - self.versuche < self.anzahlaktivegegner()
+    def zuwenig_versuche(self):
+        verloren = self.maxversuche - self.versuche < self.anzahl_aktive_gegner()
         if verloren:
-            Session.punktezuruecksetzen()
+            Session.punkte_zuruecksetzen()
         return verloren
 
-    def gegnereingedrungen(self):
+    def gegner_eingedrungen(self):
         eingedrungen = 0
         for gegner in self.gegner:
             if gegner.status == "aktiv":
@@ -150,33 +150,34 @@ class Spiel:
                     eingedrungen += 1
         verloren = eingedrungen >= EINGEDRUNGENENDE
         if verloren:
-            Session.punktezuruecksetzen()
+            Session.punkte_zuruecksetzen()
         return verloren
 
-    def zeichnegegner(self):
+    def zeichne_gegner(self):
         for gegner in self.gegner:
             fenster.blit(gegner.bild, (gegner.X, gegner.Y))
 
-    def zeichnekugellager(self):
+    def zeichne_kugellager(self):
         for x in range(self.maxversuche - self.versuche):
             fenster.blit(self.kugelbild, (0, H - (x * 10) - 20))
 
     def spielstand(self):
-        inhalt = "{} Tropfen für {} Milbe(n) Punkte: {} Highscore: {} Level: {}".format(self.maxversuche - self.versuche,
-                                                                                       self.anzahlaktivegegner(),
-                                                                                       Session.punkte,
-                                                                                       self.highscore, Session.level + 1)
-        if spiel.ingefahr():
+        text = "{} Tropfen für {} Milbe(n) Punkte: {} Highscore: {} Level: {}".format(
+            self.maxversuche - self.versuche,
+            self.anzahl_aktive_gegner(),
+            Session.punkte,
+            self.highscore, Session.level + 1)
+        if spiel.in_gefahr():
             textfarbe = ROT
         else:
             textfarbe = SCHWARZ
-        return font.render(inhalt, True, textfarbe)
+        return font.render(text, True, textfarbe)
 
-    def erzeugegegner(self):
+    def erzeuge_gegner(self):
         for x in range(self.anzahlgegner):
             self.gegner.append(Gegner())
 
-    def bewegegegner(self):
+    def bewege_gegner(self):
         for gegner in self.gegner:
             if gegner.status == "aktiv":
                 gegner.Y += gegner.bewegung
@@ -191,7 +192,7 @@ class Spiel:
             else:
                 gegner.Y = spieler.posY
 
-    def loeschegegner(self, i):
+    def loesche_gegner(self, i):
         del self.gegner[i]
 
 
@@ -205,13 +206,13 @@ class Spieler:
         self.bereich = SPIELERBILDBEREICH
         self.bewegungfaktor = 1
 
-    def up(self):
+    def nach_oben(self):
         self.bewegung = -SPIELERBEWEGUNG * self.bewegungfaktor
 
-    def down(self):
+    def nach_unten(self):
         self.bewegung = SPIELERBEWEGUNG * self.bewegungfaktor
 
-    def stop(self):
+    def anhalten(self):
         self.bewegung = 0
 
     def langsamer(self):
@@ -274,11 +275,11 @@ class Kugel:
 
         if getroffen:
             self.status = False
-            spiel.hatgegnergetroffen(durchgang)
+            spiel.hat_gegner_getroffen(durchgang)
 
         return getroffen
 
-    def ausdemfeld(self):
+    def aus_dem_feld(self):
         ausserhalb = self.X > W
         if ausserhalb:
             self.status = False
@@ -294,7 +295,7 @@ class Gegner:
         self.status = "aktiv"
 
 
-def endebildschirm(status, text=''):
+def zeige_ende_bildschirm(status, text=''):
     pygame.mixer.music.stop()
     if status == "gewonnen":
         pygame.time.wait(2000)
@@ -339,18 +340,18 @@ def endebildschirm(status, text=''):
     pygame.mixer.Sound.stop(sound)
 
 
-def neuesspiel(naechsteslevel=False):
+def erzeuge_neues_spiel(naechstes_level=False):
     global spiel, spieler, kugel
     # Neue Instanzen erzeugen
-    if naechsteslevel:
-        Session.naechsteslevel()
-    Session.setzestartpunkte()
+    if naechstes_level:
+        Session.naechstes_level()
+    Session.setze_startpunkte()
     spiel = Spiel()
     spieler = Spieler()
     kugel = Kugel()
 
 
-def zeichnespielfeld():
+def zeichne_spielfeld():
     # Spielfeld löschen
     fenster.fill(WEISS)
     fenster.blit(Session.hintergrund, (0, 0))
@@ -365,10 +366,10 @@ def zeichnespielfeld():
 
     # Kugel
     kugel.zeichne()
-    spiel.zeichnekugellager()
+    spiel.zeichne_kugellager()
 
     # Gegner
-    spiel.zeichnegegner()
+    spiel.zeichne_gegner()
 
     # Fenster aktualisieren
     pygame.display.flip()
@@ -394,10 +395,10 @@ while aktiv:
             # Taste für Spieler 1
             if event.key == K_UP:
                 # print("Spieler hat Pfeiltaste hoch gedrückt")
-                spieler.up()
+                spieler.nach_oben()
             elif event.key == K_DOWN:
                 # print("Spieler hat Pfeiltaste runter gedrückt")
-                spieler.down()
+                spieler.nach_unten()
             elif event.key == K_ESCAPE:
                 aktiv = False
 
@@ -409,11 +410,11 @@ while aktiv:
 
         if event.type == KEYUP:
             # print("Spieler stoppt bewegung")
-            spieler.stop()
+            spieler.anhalten()
 
     spieler.bewege()
 
-    spiel.bewegegegner()
+    spiel.bewege_gegner()
 
     if kugel.status:
         kugel.bewege()
@@ -421,38 +422,38 @@ while aktiv:
         durchgang = 0
         for gegner in spiel.gegner:
             getroffen = kugel.kollisionskontrolle(gegner, durchgang)
-            durchgang += 1
 
             if getroffen:
                 break
 
             # Kugel verlässt den Bildschirm
-            if kugel.ausdemfeld():
+            if kugel.aus_dem_feld():
                 # Verloren, keine spiel.versuche mehr
-                if spiel.keineversuchemehr():
-                    endebildschirm("verloren", "Keine Honigtropfen mehr")
-                    neuesspiel()
+                if spiel.keine_versuche_mehr():
+                    zeige_ende_bildschirm("verloren", "Keine Honigtropfen mehr")
+                    erzeuge_neues_spiel()
 
                 # spiel.versuche reichen nicht mehr aus
-                if spiel.zuwenigversuche():
-                    endebildschirm("verloren", "Zu viele Milben für zu wenig Honigtropfen")
-                    neuesspiel()
+                if spiel.zuwenig_versuche():
+                    zeige_ende_bildschirm("verloren", "Zu viele Milben für zu wenig Honigtropfen")
+                    erzeuge_neues_spiel()
 
                 # Es ist bald zu Ende...
-                if spiel.ingefahr():
-                    spiel.sirene()
+                if spiel.in_gefahr():
+                    spiel.spiel_warnung()
+            durchgang += 1
 
     # Spiel entschieden?
     # Gewonnen, keine Gegner mehr
-    if spiel.keinegegnermehr():
-        zeichnespielfeld()
-        endebildschirm("gewonnen")
-        neuesspiel(True)
+    if spiel.keine_gegner_mehr():
+        zeichne_spielfeld()
+        zeige_ende_bildschirm("gewonnen")
+        erzeuge_neues_spiel(True)
 
     # Verloren, Gegner sind eingedrungen
-    if spiel.gegnereingedrungen():
-        zeichnespielfeld()
-        endebildschirm("verloren", "Zu viele Milben haben dich erwischt")
-        neuesspiel()
+    if spiel.gegner_eingedrungen():
+        zeichne_spielfeld()
+        zeige_ende_bildschirm("verloren", "Zu viele Milben haben dich erwischt")
+        erzeuge_neues_spiel()
 
-    zeichnespielfeld()
+    zeichne_spielfeld()
