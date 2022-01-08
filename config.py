@@ -38,7 +38,7 @@ SPIELERBEWEGUNG: int = 420
 SPIELERX: int = 50
 # Um diesen Faktor wird die Spielergeschwindigkeit bei Eindringen eines Gegners reduziert
 SPIELERBEWEGUNGFAKTOR: float = 0.8
-# Fensterbeschriftunt
+# Fensterbeschriftung
 CAPTION: str = "Varroa Invaders"
 
 # Bilder

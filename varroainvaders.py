@@ -21,7 +21,7 @@ font = pygame.font.Font(None, 28)
 
 # Globale Spielvariablen
 class Session:
-    level: int = 0
+    level: int = STARTLEVEL
     punkte: int = 0
     startpunkte: int = 0
     hintergrund: Surface = pygame.image.load(HINTERGRUNDBILD)
@@ -416,7 +416,7 @@ def zeige_ende_bildschirm(status: str, text='') -> None:
         pygame.time.wait(2000)
         sound = pygame.mixer.Sound(ERFOLGSOUND)
         pygame.mixer.Sound.play(sound)
-        inhalt = "Spiel gewonnen! " + text
+        inhalt = "Spiel gewonnen! Drücke ESC um fortzufahren" + text
     else:
         sound = pygame.mixer.Sound(SCHEITERNSOUND1)
         pygame.mixer.Sound.play(sound)
